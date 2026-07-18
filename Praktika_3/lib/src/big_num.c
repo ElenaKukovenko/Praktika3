@@ -253,3 +253,35 @@ void AddBigNum(IN BigNum bigNum1, IN BigNum bigNum2, OUT BigNum res, size_t bigN
         BitsArraySet(res, maxSize, 1);
     }
 }
+
+
+
+void SubBigNum(IN BigNum bigNum1, IN BigNum bigNum2, OUT BigNum res, size_t bigNum1Size, size_t bigNum2Size) {
+    if (bigNum1 == NULL || bigNum2 == NULL || res == NULL) {
+        return;
+    }
+    size_t maxSize = (bigNum1Size > bigNum2Size) ? bigNum1Size : bigNum2Size;
+    BitsArrayMaxType MASK = create_mask();
+    BitsArrayMaxType zaem = 0;  // Перенос (0 или 1)
+
+    for (size_t i = 0; i < maxSize; i++) {
+        // Читаем элементы (если есть)
+        BitsArrayMaxType a = (i < bigNum1Size) ? BitsArrayGet(bigNum1, i) : 0;
+        BitsArrayMaxType b = (i < bigNum2Size) ? BitsArrayGet(bigNum2, i) : 0;
+
+        // Складываем
+        BitsArrayMaxType sub  = a - b - zaem;
+
+        if (sub > MASK) {
+            // diff стал отрицательным
+            sub = sub + (MASK + 1);
+            zaem = 1;
+        }
+
+        // Записываем результат (младшие N бит)
+        BitsArraySet(res, i, sub & MASK);
+    }
+    //if (zaem) {
+    //    
+    //}
+}
