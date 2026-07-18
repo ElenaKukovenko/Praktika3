@@ -58,3 +58,67 @@ BitsArrayMaxType BitsArrayGet(BitsArray bitsArray, unsigned int i)
     }
 
 }
+
+
+// помещает i-ый N-битный элемент в битовый массив
+void BitsArraySet(BitsArray bitsArray, unsigned int i, BitsArrayMaxType value) {
+    //Сколько бит в одном слове
+    const unsigned int BITS_IN_WORD = sizeof(BitsArrayElementType) * 8;
+    //Где начинается наш элемент
+    unsigned long long bitOffset = (unsigned long long)i * N;
+    //В каком слове находится начало
+    unsigned int wordIndex = bitOffset / BITS_IN_WORD;
+    //На каком месте внутри этого слова
+    unsigned int bitInWord = bitOffset % BITS_IN_WORD;
+
+    BitsArrayMaxType MASK;
+    if (N == 64) {
+        MASK = ~0ULL;
+    }
+    else {
+        MASK = (1ULL << N) - 1;
+    }
+    BitsArrayMaxType limitedValue = value & MASK;
+
+    if (bitInWord + N <= BITS_IN_WORD) {
+        //Берём текущее слово
+        BitsArrayElementType word = bitsArray[wordIndex];
+
+        //Создаём маску для очистки места
+        //Нужно обнулить биты с bitInWord по bitInWord + N
+        BitsArrayElementType clearMask = (BitsArrayElementType)~(MASK << bitInWord);
+
+        //Очищаем место
+        BitsArrayElementType clearedWord = word & clearMask;
+
+        //Записываем новое значение
+        BitsArrayElementType newWord = clearedWord | (BitsArrayElementType)(limitedValue << bitInWord);
+
+        //Сохраняем обратно в массив
+        bitsArray[wordIndex] = newWord;
+    }
+    else {
+        //Сколько бит в первом и втором слове
+        unsigned int bitsFromFirst = BITS_IN_WORD - bitInWord;
+        unsigned int bitsFromSecond = N - bitsFromFirst;
+
+        //Разделяем значение на две части
+        BitsArrayMaxType part1 = limitedValue & ((1ULL << bitsFromFirst) - 1);
+        BitsArrayMaxType part2 = limitedValue >> bitsFromFirst;
+
+        //Записываем в первое слово (биты в конце)
+        BitsArrayElementType word1 = bitsArray[wordIndex];
+        BitsArrayElementType clearMask1 = (BitsArrayElementType)~((1ULL << bitsFromFirst) - 1);
+        BitsArrayElementType clearedWord1 = word1 & clearMask1;
+        BitsArrayElementType newWord1 = clearedWord1 | (BitsArrayElementType)part1;
+        bitsArray[wordIndex] = newWord1;
+
+        //Записываем во второе слово (биты в начале)
+        BitsArrayElementType word2 = bitsArray[wordIndex + 1];
+        BitsArrayElementType clearMask2 = (BitsArrayElementType)~((1ULL << bitsFromSecond) - 1);
+        BitsArrayElementType clearedWord2 = word2 & clearMask2;
+        BitsArrayElementType newWord2 = clearedWord2 | (BitsArrayElementType)part2;
+        bitsArray[wordIndex + 1] = newWord2;
+    }
+
+}
