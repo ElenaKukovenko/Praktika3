@@ -320,4 +320,86 @@ void MulBigNum(IN BigNum bigNum1, IN BigNum bigNum2, OUT BigNum res, size_t bigN
 
 
 
-//void DivBigNum(IN BigNum bigNum1, IN BigNum bigNum2, OUT BigNum res, size_t bigNum1Size, size_t bigNum2Size);
+static int is_zero(BigNum num, size_t size) {
+    for (size_t i = 0; i < size; i++) {
+        if (BitsArrayGet(num, i) != 0) {
+            return 0;
+        }
+    }
+    return 1;
+}
+//Сравнение чисел
+static int compare_big_nums (BigNum a, BigNum b, size_t sizeA, size_t sizeB){
+    size_t maxSize = (sizeA > sizeB) ? sizeA : sizeB;
+
+    for (size_t i = maxSize; i > 0; i--) {
+        BitsArrayMaxType va = (i <= sizeA) ? BitsArrayGet(a, i - 1) : 0;
+        BitsArrayMaxType vb = (i <= sizeB) ? BitsArrayGet(b, i - 1) : 0;
+
+        if (va > vb) return 1;
+        if (va < vb) return -1;
+    }
+    return 0;  // Числа равны
+}
+//Копирование числа
+static void copy_big_num(BigNum dest, BigNum src, size_t size) {
+    if (dest == NULL || src == NULL) {
+        return;
+    }
+
+    for (size_t i = 0; i < size; i++) {
+        BitsArrayMaxType value = BitsArrayGet(src, i);
+        BitsArraySet(dest, i, value);
+    }
+}
+
+static void add_one_to_big_num(BigNum num, size_t size)
+{
+    BitsArrayMaxType carry = 1;  // Начинаем с 1
+
+    for (size_t i = 0; i < size && carry; i++) {
+        BitsArrayMaxType current = BitsArrayGet(num, i);
+        BitsArrayMaxType sum = current + carry;
+
+        // Если переполнение
+        if (sum > create_mask()) {
+            BitsArraySet(num, i, 0);
+            carry = 1;
+        }
+        else {
+            BitsArraySet(num, i, sum);
+            carry = 0;
+        }
+    }
+    if (carry) {
+        printf("Warning: overflow when adding 1\n");
+    }
+}
+
+void DivBigNum(IN BigNum bigNum1, IN BigNum bigNum2, OUT BigNum res, size_t bigNum1Size, size_t bigNum2Size){
+    if(bigNum1 == NULL || bigNum2 == NULL || res == NULL) {
+        return;
+    }
+    if (is_zero(bigNum2, bigNum2Size)) {
+        return;
+    }
+    if (compare_big_nums(bigNum1, bigNum2, bigNum1Size, bigNum2Size) < 0) {
+        return;  // res = 0
+    }
+    BigNum remainder = AllocBigNum(bigNum1Size);
+    copy_big_num(remainder, bigNum1, bigNum1Size);
+    size_t quotientSize = bigNum1Size;
+    BigNum quotient = AllocBigNum(quotientSize);
+    while (compare_big_nums(remainder, bigNum2, bigNum1Size, bigNum2Size) >= 0) {
+        // Вычитаем делитель из остатка
+        SubBigNum(remainder, bigNum2, remainder, bigNum1Size, bigNum2Size);
+
+        // Увеличиваем частное на 1
+        add_one_to_big_num(quotient, quotientSize);
+    }
+    copy_big_num(res, quotient, quotientSize);
+    free(remainder);
+    free(quotient);
+
+}
+
