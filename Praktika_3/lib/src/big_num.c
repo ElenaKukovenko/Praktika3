@@ -183,3 +183,28 @@ BigNum GetBigNumByStr(IN const char* str, OUT size_t* bigNumSize) {
     }
     return num;
 }
+
+void PrintBigNum(IN BigNum bigNum, size_t bigNumSize) {
+    if (bigNum == NULL || bigNumSize == 0) {
+        return;
+    }
+    // Смотрим, сколько hex-цифр в одном элементе
+    // N бит / 4 бита на цифру = N/4, округление вверх
+    unsigned int hexDigits = (N + 3) / 4;
+    int started = 0;  // Флаг: начали ли вывод
+
+    // Последний элемент - самый старший
+    for (size_t i = bigNumSize; i > 0; i--) {
+        BitsArrayMaxType value = BitsArrayGet(bigNum, i - 1);
+        // Выводим этот элемент
+        for (unsigned int j = hexDigits; j > 0; j--) {
+            // Берём 4 бита
+            unsigned int shift = (j - 1) * 4;
+            unsigned int digit = (value >> shift) & 0xF;
+            // Если digit != 0 или уже начали вывод или это последний элемент
+            if (digit != 0 || started || (i == 1 && j == 1)) {
+                started = 1;
+                printf("%X", digit);
+            }
+        }
+    }
