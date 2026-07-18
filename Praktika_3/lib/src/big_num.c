@@ -137,3 +137,49 @@ BigNum AllocBigNum(size_t bigNumSize) {
     memset(bigNum, 0, wordsNeeded * sizeof(BitsArrayElementType));
     return bigNum;
 }
+
+// выделяет память для хранения большого числа
+// и инициализирует его из строки шестнадцатиричных символов.
+BigNum GetBigNumByStr(IN const char* str, OUT size_t* bigNumSize) {
+    //Проверка входных данных
+    if (str == NULL || bigNumSize == NULL) {
+        return NULL;
+    }
+    //Подсчёт длины строки  
+    size_t strLen = strlen(str);
+    if (strLen == 0) {
+        return NULL;
+    }
+    //Вычисление размера большого числа
+    unsigned long long totalBits = (unsigned long long)strLen * 4;
+    *bigNumSize = (size_t)((totalBits + N - 1) / N);
+    //Выделение памяти
+    BigNum num = AllocBigNum(*bigNumSize);
+    if (num == NULL) {
+        return NULL;
+    }
+    for (size_t i = 0; i < strLen; i++) {
+        // Берём символ с конца строки
+        char c = str[strLen - 1 - i];
+        unsigned int value = hex_char_to_value(c);
+
+        // Вычисляем позицию для записи
+        unsigned int bitPos = i * 4;           // Каждый символ = 4 бита
+        unsigned int elementIndex = bitPos / N; // Индекс N-битного элемента
+        unsigned int bitInElement = bitPos % N; // Позиция внутри элемента
+
+        // Читаем текущее значение элемента
+        BitsArrayMaxType current = BitsArrayGet(num, elementIndex);
+
+        // Очищаем 4 бита в нужной позиции
+        BitsArrayMaxType CLEAR_MASK = 0xF;  // 4 бита = 1111
+        current &= ~(CLEAR_MASK << bitInElement);
+
+        // Записываем новое значение (4 бита)
+        current |= (BitsArrayMaxType)value << bitInElement;
+
+        // Сохраняем обратно
+        BitsArraySet(num, elementIndex, current);
+    }
+    return num;
+}
